@@ -1,23 +1,15 @@
-
-from typing import Iterable
-
-
-def run_command(command: str):
-    pass
-
-
-def line_is_command(line: str):
-    return line[0] == "$"
-
-
-def line_to_args(line: str):
-    return line.strip().split(" ")
+"""Day 7: No Space Left On Device
+"""
+from typing import Iterable, Tuple
 
 
 class File:
     def __init__(self, name, size) -> None:
         self.name = name
-        self.size = size
+        self.size = int(size)
+
+    def get_size(self):
+        return self.size
 
 
 class Directory:
@@ -26,112 +18,129 @@ class Directory:
         self.parent = parent
         self.content = {}
 
+    def get_subdir_sizes(self):
+        this_size, subdir_sizes = self.__get_subdir_sizes()
+        return [this_size] + subdir_sizes
 
-    def get_dir_sizes(self):
-        dir_sizes = []
-        this_size = 0
+    def __get_subdir_sizes(self, sub_sizes=None):
+        if sub_sizes is None:
+            sub_sizes = []
+        dir_size = 0
         for value in self.content.values():
             if type(value) is Directory:
-                size = value.get_dir_sizes()
-                dir_sizes.extend(size)
-                this_size += sum(size)
-            if type(value) is File:
-                this_size += int(value.size)
-        dir_sizes.extend([this_size])
-        return dir_sizes
+                sub_dir_size, sub_sizes = value.__get_subdir_sizes(sub_sizes)
+                dir_size += sub_dir_size
+            elif type(value) is File:
+                dir_size += value.size
+        sub_sizes.append(dir_size)
 
+        return dir_size, sub_sizes
 
-    def calculate_size(self):
+    def get_size(self):
         total_size = 0
         for value in self.content.values():
-            if type(value) is Directory:
-                total_size += value.calculate_size()
-            if type(value) is File:
-                total_size += int(value.size)
+            total_size += value.get_size()
+
         return total_size
 
 
 def find_value_closest_to_target(iterable: Iterable, target: int):
-    # candidates = filter(lambda v: v >= target, iterable)
-    # closest_value = sorted(candidates)[0]
-    # print(list(candidates))
-    # return closest_value
-    closest_value = None
-    for value in iterable:
-        delta = target - value
-        if delta < 0:
-            if closest_value is None or value < closest_value:
-                closest_value = value
+    candidates = filter(lambda v: v >= target, iterable)
+    closest_value = sorted(candidates)[0]
     return closest_value
 
 
+class LineParser:
+    def __init__(self) -> None:
+        self.__base_directory = None
+        self.__current_directory = Directory("Temporary Tree Wrapper")
+        self.__current_line_index = 0
+        self.__lines = []
+
+    def create_file_tree_from_lines(self, lines: Iterable[str]):
+        self.__lines = lines
+        while self.__current_line_index < len(lines):
+            line = lines[self.__current_line_index]
+            args = self.__line_to_args(line)
+            if self.__line_is_command(line):
+                self.__process_command(args)
+            self.__current_line_index += 1
+
+        return self.__base_directory
+
+    def __line_is_command(self, line: str):
+        return line[0] == "$"
+
+    def __line_to_args(self, line: str):
+        return line.strip().split(" ")[1:]
+
+    def __process_command(self, args):
+        command = args[0]
+        if command == "cd":
+            self.__run_cd_command(args[1])
+        elif command == "ls":
+            self.__run_ls_command()
+
+    def __run_cd_command(self, argument: str):
+        if argument == "..":
+            self.__current_directory = self.__current_directory.parent
+        else:
+            self.__current_directory = self.__current_directory.content.get(
+                argument,
+                Directory(argument, parent=self.__current_directory)
+            )
+        if self.__base_directory is None:
+            self.__base_directory = self.__current_directory
+
+    def __run_ls_command(self):
+        i = self.__current_line_index + 1
+        while (i < len(self.__lines)
+               and not self.__line_is_command(self.__lines[i])):
+            ls_output = self.__lines[i].strip().split(" ")
+            self.__handle_ls_output(ls_output)
+            i += 1
+        self.__current_line_index = i - 1
+
+    def __handle_ls_output(self, ls_output: Tuple[str, str]):
+        if ls_output[0] == "dir":
+            self.__current_directory.content[ls_output[1]] = Directory(
+                ls_output[1], self.__current_directory
+            )
+        else:
+            self.__current_directory.content[ls_output[1]] = File(
+                ls_output[1], ls_output[0]
+            )
+
+
 def part_1():
-    base_directory = None
-    current_directory = None
-    ls_command_running = False
     lines = open("day_07/input.txt").readlines()
-    # lines = open("day_07/test.txt").readlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        # current_line_is_command = line_is_command(line)
-        if line_is_command(line):
-            args = line_to_args(line)
-            if args[1] == "cd":
-                if args[2] == "..":
-                    current_directory = current_directory.parent
-                else:
-                    if base_directory is None:
-                        base_directory = Directory(
-                            args[2],
-                            parent=current_directory
-                        )
-                        current_directory = base_directory
-                    else:
-                        current_directory = current_directory.content.get(
-                            args[2],
-                            Directory(args[2],
-                                      parent=current_directory)
-                        )
-                    
-            if args[1] == "ls":
-                ls_command_running = True
-        elif ls_command_running:
-            args = line_to_args(lines[i])
-            if args[0] == "dir":
-                current_directory.content[args[1]] = Directory(args[1],
-                                                                current_directory)
-            else:
-                current_directory.content[args[1]] = File(args[1],
-                                                            args[0])
-        i += 1
-        
-    if base_directory is not None:
-        total_size = base_directory.calculate_size()
-        print(total_size)
-        sizes = base_directory.get_dir_sizes()
-        print(sum(filter(lambda s: s < 100_000, sizes)))
-        
-        total_disk_space = 70_000_000
-        space_required_for_update = 30_000_000
-        free_space = total_disk_space - base_directory.calculate_size()
-        additional_space_needed = (space_required_for_update-free_space)
-        print(sorted(sizes))
-        closest_value = find_value_closest_to_target(sizes, additional_space_needed)
-        print(closest_value)
-        # print(size)
-        # sum_size = sum(size)
-        # print(sum_size)
+    parser = LineParser()
+    base_directory = parser.create_file_tree_from_lines(lines)
+    subdir_sizes = base_directory.get_subdir_sizes()
+    sum_of_filtered_sizes = sum(filter(lambda s: s < 100_000, subdir_sizes))
+    print("Part 1 - The sum of directory sizes where the size is less than "
+          f"100 000 is {sum_of_filtered_sizes}.")
 
 
+def part_2():
+    lines = open("day_07/input.txt").readlines()
+    parser = LineParser()
+    base_directory = parser.create_file_tree_from_lines(lines)
+    subdir_sizes = base_directory.get_subdir_sizes()
 
-
-
-
+    total_disk_space = 70_000_000
+    space_required_for_update = 30_000_000
+    free_space = total_disk_space - base_directory.get_size()
+    additional_space_needed = (space_required_for_update-free_space)
+    closest_value = find_value_closest_to_target(subdir_sizes,
+                                                 additional_space_needed)
+    print("Part 2 - The smallest directory that could be deleted to "
+          f"free enough memory has a size of {closest_value}.")
 
 
 def main():
     part_1()
+    part_2()
 
 
 if __name__ == "__main__":
