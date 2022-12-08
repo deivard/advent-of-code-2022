@@ -1,9 +1,10 @@
 """Day 8: Treetop Tree House
 """
 from math import prod
+from typing import Iterable
 
 
-def trees_visible_in_line(tree_line: str):
+def trees_visible_in_line(tree_line: Iterable):
     tallest_tree = -1
     visible_trees_mask = [0] * len(tree_line)
     for i, tree_height in enumerate(tree_line):
@@ -14,12 +15,12 @@ def trees_visible_in_line(tree_line: str):
     return visible_trees_mask
 
 
-def merge_visibility_masks(visibility_masks: tuple[list[int]]):
+def merge_visibility_masks(visibility_masks: tuple[Iterable[int], Iterable[int]]):
     return [int(bool(sum(pair))) for pair in
             zip(visibility_masks[0], visibility_masks[1])]
 
 
-def visibility_mask_to_indices(visibility_mask: list[int]):
+def visibility_mask_to_indices(visibility_mask: Iterable[int]):
     return [i for i in range(len(visibility_mask)) if visibility_mask[i] != 0]
 
 
@@ -31,7 +32,7 @@ def record_visible_trees_in_dict(coordinates: tuple[int, int],
     return visible_trees_record
 
 
-def calculate_view_distance(view_height, trees_in_sight_line):
+def calculate_view_distance(view_height: int, trees_in_sight_line: Iterable):
     view_distance = 0
     for tree_height in trees_in_sight_line:
         view_distance += 1
@@ -40,14 +41,14 @@ def calculate_view_distance(view_height, trees_in_sight_line):
     return view_distance
 
 
-def calculate_view_distances(view_height, tree_sight_lines):
-    return [
-        calculate_view_distance(view_height, sight_line)
-        for sight_line in tree_sight_lines
-    ]
+def calculate_view_distances(view_height: int,
+                             tree_sight_lines: Iterable[Iterable]):
+    return [calculate_view_distance(view_height, sight_line)
+            for sight_line in tree_sight_lines]
 
 
-def calculate_tree_scenic_score(tree_position, grid):
+def calculate_tree_scenic_score(tree_position: Iterable[int, int],
+                                grid: Iterable[Iterable]):
     trees_to_the_left = grid[tree_position[0]][:tree_position[1]][::-1]
     trees_to_the_right = grid[tree_position[0]][tree_position[1]+1:]
     trees_up = [
@@ -67,7 +68,7 @@ def calculate_tree_scenic_score(tree_position, grid):
     return prod(view_distances)
 
 
-def calculate_scenic_scores(grid: list[str]):
+def calculate_scenic_scores(grid: Iterable[Iterable]):
     scenic_scores = []
     for row_index in range(0, len(grid)):
         for column_index in range(0, len(grid[0])):
