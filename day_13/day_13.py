@@ -47,7 +47,7 @@ def compare(left_iter, right_iter):
                 return True
             else:
                 return False
-            
+
         # Both values are lists
         elif type(left) is list and type(right) is list:
             correct_order = compare(iter(left), iter(right))
