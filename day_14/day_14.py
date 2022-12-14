@@ -203,7 +203,7 @@ def visualization_demo():
     start_offset = 0
     num_sand_settled = 0
     printed_rows = 0
-    sleep_time = 0.1
+    sleep_time = 0.05
     min_sleep_time = 0
     while cave_map[sand_start_pos[0]][sand_start_pos[1]] != "o":
         sand_start_pos = (0, 500+start_offset)
@@ -247,7 +247,7 @@ def part_1():
 
 
 def part_2():
-    lines = open("day_14/input2.txt").readlines()
+    lines = open("day_14/input.txt").readlines()
     rock_paths = get_rock_paths_from_lines(lines)
     _, max_boundaries = find_map_boundaries(rock_paths)
     max_boundaries = max_boundaries[0], max_boundaries[1] + 2
