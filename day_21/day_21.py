@@ -59,7 +59,8 @@ def part_2():
         if len(output) == 1:
             expression = expression.replace(current_replace, output[0])
         else:
-            expression = expression.replace(current_replace, f"({' '.join(output)})")
+            expression = expression.replace(current_replace,
+                                            f"({' '.join(output)})")
             to_replace.extend([output[0], output[2]])
 
     left_hand, right_hand = expression.split("=")
